@@ -119,17 +119,20 @@ function TagLibrary({ onInsertTag, modules = [], currentModuleId, isPlayground =
         </button>
         {!isModule1 && showCharacters && (
           <div className="character-grid">
-            {characters.map((char) => (
-              <button
-                key={char.name}
-                className="character-card"
-                onClick={() => onInsertTag(`<img src="/characters/${char.filename}" alt="${char.name}" width="150">`, null, true)}
-                title={`Add ${char.name} to your page!`}
-              >
-                <img src={`/characters/${char.filename}`} alt={char.name} className="character-icon" />
-                <span className="character-name">{char.name}</span>
-              </button>
-            ))}
+            {characters.map((char) => {
+              const charPath = `/characters/${char.filename}`;
+              return (
+                <button
+                  key={char.name}
+                  className="character-card"
+                  onClick={() => onInsertTag(`<img src="${charPath}" alt="${char.name}" width="150">`, null, true)}
+                  title={`Add ${char.name} to your page!`}
+                >
+                  <img src={charPath} alt={char.name} className="character-icon" />
+                  <span className="character-name">{char.name}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

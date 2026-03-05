@@ -52,7 +52,7 @@ function LivePreview({ code, onRun }) {
         {showPreview && code.trim() ? (
           <iframe
             title="Live Preview"
-            srcDoc={code}
+            srcDoc={`<base href="/">${code}`}
             className="preview-iframe"
             sandbox="allow-scripts allow-same-origin"
           />
@@ -74,7 +74,7 @@ function LivePreview({ code, onRun }) {
             <div className="zoom-modal-body">
               <iframe
                 title="Zoom Preview"
-                srcDoc={code}
+                srcDoc={`<base href="/">${code}`}
                 className="zoom-iframe"
                 sandbox="allow-scripts allow-same-origin"
               />
