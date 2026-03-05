@@ -54,7 +54,7 @@ function LivePreview({ code, onRun }) {
             title="Live Preview"
             srcDoc={code}
             className="preview-iframe"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
           />
         ) : (
           <div className="preview-placeholder">
@@ -76,7 +76,7 @@ function LivePreview({ code, onRun }) {
                 title="Zoom Preview"
                 srcDoc={code}
                 className="zoom-iframe"
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-same-origin"
               />
             </div>
           </div>

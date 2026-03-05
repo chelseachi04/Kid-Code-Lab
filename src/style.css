@@ -35,7 +35,7 @@ body {
 
 /* LIGHT MODE (DEFAULT) */
 :root[data-theme='light'] {
-  --bg-gradient: linear-gradient(to bottom right, #6366f1, #a855f7);
+  --bg-gradient: linear-gradient(135deg, #2563eb 0%, #9333ea 100%);
   --bg-primary: #ffffff;
   --text-primary: #2d3748;
   --text-secondary: #4a5568;
@@ -52,19 +52,19 @@ body {
 
 /* DARK MODE */
 :root[data-theme='dark'] {
-  --bg-gradient: linear-gradient(to bottom right, #4f46e5, #7c3aed);
-  --bg-primary: #1a202c;
-  --text-primary: #f7fafc;
-  --text-secondary: #edf2f7;
-  --border-color: #4a5568;
-  --panel-left-bg: #2d3748;
-  --panel-left-border: #fbbf24;
-  --panel-center-bg: #2d3748;
-  --panel-center-border: #60a5fa;
-  --panel-right-bg: #2d3748;
-  --panel-right-border: #a78bfa;
-  --editor-bg: #1a202c;
-  --editor-border: #60a5fa;
+  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  --bg-primary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --border-color: #334155;
+  --panel-left-bg: #1e1e1a;
+  --panel-left-border: #8b7500;
+  --panel-center-bg: #0f172a;
+  --panel-center-border: #3a6fa0;
+  --panel-right-bg: #171123;
+  --panel-right-border: #6a5aa0;
+  --editor-bg: #0f172a;
+  --editor-border: #3a6fa0;
 }
 
 body {

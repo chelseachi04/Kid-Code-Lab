@@ -17,7 +17,7 @@ const tagDictionary = [
         name: 'A Picture',
         tag: '<img>',
         desc: 'Add a fun image to your page! You can use a URL, upload your own, or pick a friend from the Character Gallery!',
-        example: '<img src="https://placekitten.com/200/200">'
+        example: '<img src="/characters/Bluey.jpg" width="150">'
     },
     {
         name: 'A Link',

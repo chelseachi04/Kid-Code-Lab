@@ -31,42 +31,43 @@ function TagLibrary({ onInsertTag, modules = [], currentModuleId, isPlayground =
   }
 
   const characters = [
-    { name: 'Alvin', url: '/characters/Alvin.jpg' },
-    { name: 'Ben', url: '/characters/Ben.jpg' },
-    { name: 'Bingo', url: '/characters/Bingo.jpg' },
-    { name: 'Bluey', url: '/characters/Bluey.jpg' },
-    { name: 'Cars Lightning McQueen', url: '/characters/Cars%20Lightning%20McQueen.jpg' },
-    { name: 'Chase', url: '/characters/Chase.jpg' },
-    { name: 'Dora', url: '/characters/Dora.jpg' },
-    { name: 'Duck', url: '/characters/Duck.jpg' },
-    { name: 'James', url: '/characters/James.jpg' },
-    { name: 'Judy Hopps', url: '/characters/Judy%20Hopps.jpg' },
-    { name: 'Luigi', url: '/characters/Luigi.jpg' },
-    { name: 'Mario (Happy)', url: '/characters/Mario!.jpg' },
-    { name: 'Mario', url: '/characters/Mario.jpg' },
-    { name: 'Mark', url: '/characters/Mark.jpg' },
-    { name: 'Marshall', url: '/characters/Marshall.jpg' },
-    { name: 'Nick', url: '/characters/Nick.jpg' },
-    { name: 'Panda', url: '/characters/Panda.jpg' },
-    { name: 'Patrick', url: '/characters/Patrick.jpg' },
-    { name: 'Paul', url: '/characters/Paul.jpg' },
-    { name: 'Peter', url: '/characters/Peter.jpg' },
-    { name: 'Pikachu', url: '/characters/PIKACHU.jpg' },
-    { name: 'Pup Wall Decal', url: '/characters/Pup%20Wall%20Decal.jpg' },
-    { name: 'Rider', url: '/characters/Rider.jpg' },
-    { name: 'Rita', url: '/characters/Rita.jpg' },
-    { name: 'Rocky', url: '/characters/rocky.jpg' },
-    { name: 'Rubble', url: '/characters/Rubble.jpg' },
-    { name: 'Simon', url: '/characters/Simon.jpg' },
-    { name: 'Skye', url: '/characters/Skye.jpg' },
-    { name: 'SpongeBob', url: '/characters/Spongbob.jpg' },
-    { name: 'Tanjiro', url: '/characters/Tanjiro.jpg' },
-    { name: 'Theodore', url: '/characters/Theodore.jpg' },
-    { name: 'Toad', url: '/characters/Toad.jpg' },
-    { name: 'Tom', url: '/characters/Tom.jpg' },
-    { name: 'Tracker', url: '/characters/Tracker.jpg' },
-    { name: 'Zuma', url: '/characters/Zuma.jpg' },
-    { name: 'Mystery Friend', url: '/characters/download%20(2).jpg' },
+    { name: 'Alvin', filename: 'Alvin.jpg' },
+    { name: 'Ben', filename: 'Ben.jpg' },
+    { name: 'Bingo', filename: 'Bingo.jpg' },
+    { name: 'Bluey', filename: 'Bluey.jpg' },
+    { name: 'Lightning McQueen', filename: 'Cars Lightning McQueen.jpg' },
+    { name: 'Chase', filename: 'Chase.jpg' },
+    { name: 'Dora', filename: 'Dora.jpg' },
+    { name: 'Duck', filename: 'Duck.jpg' },
+    { name: 'James', filename: 'James.jpg' },
+    { name: 'Judy Hopps', filename: 'Judy Hopps.jpg' },
+    { name: 'Luigi', filename: 'Luigi.jpg' },
+    { name: 'Mario (Happy)', filename: 'Mario!.jpg' },
+    { name: 'Mario', filename: 'Mario.jpg' },
+    { name: 'Mark', filename: 'Mark.jpg' },
+    { name: 'Marshall', filename: 'Marshall.jpg' },
+    { name: 'Nick', filename: 'Nick.jpg' },
+    { name: 'PIKACHU', filename: 'PIKACHU.jpg' },
+    { name: 'Panda', filename: 'Panda.jpg' },
+    { name: 'Patrick Star', filename: 'Patrick.jpg' },
+    { name: 'Paul', filename: 'Paul.jpg' },
+    { name: 'Peter', filename: 'Peter.jpg' },
+    { name: 'Pup Wall Decal', filename: 'Pup Wall Decal.jpg' },
+    { name: 'Rider', filename: 'Rider.jpg' },
+    { name: 'Rita', filename: 'Rita.jpg' },
+    { name: 'Rocky', filename: 'rocky.jpg' },
+    { name: 'Rubble', filename: 'Rubble.jpg' },
+    { name: 'Simon', filename: 'Simon.jpg' },
+    { name: 'Skye', filename: 'Skye.jpg' },
+    { name: 'Sonic', filename: 'Sonic.png' },
+    { name: 'SpongeBob', filename: 'Spongbob.jpg' },
+    { name: 'Tanjiro', filename: 'Tanjiro.jpg' },
+    { name: 'Theodore', filename: 'Theodore.jpg' },
+    { name: 'Toad', filename: 'Toad.jpg' },
+    { name: 'Tom', filename: 'Tom.jpg' },
+    { name: 'Tracker', filename: 'Tracker.jpg' },
+    { name: 'Zuma', filename: 'Zuma.jpg' },
+    { name: 'Mystery Friend', filename: 'download (2).jpg' },
   ]
 
   return (
@@ -122,10 +123,10 @@ function TagLibrary({ onInsertTag, modules = [], currentModuleId, isPlayground =
               <button
                 key={char.name}
                 className="character-card"
-                onClick={() => onInsertTag(`<img src="${char.url}" alt="${char.name}" width="150">`, null, true)}
+                onClick={() => onInsertTag(`<img src="/characters/${char.filename}" alt="${char.name}" width="150">`, null, true)}
                 title={`Add ${char.name} to your page!`}
               >
-                <img src={char.url} alt={char.name} className="character-icon" />
+                <img src={`/characters/${char.filename}`} alt={char.name} className="character-icon" />
                 <span className="character-name">{char.name}</span>
               </button>
             ))}

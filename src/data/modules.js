@@ -95,7 +95,7 @@ export const modules = [
   <body>
     <h1>My Favorite Cartoon</h1>
     <p>I love watching this show!</p>
-    <img src="https://via.placeholder.com/150" />
+    <img src="/characters/Bingo.jpg" width="150">
   </body>
 </html>`,
     tags: [
@@ -243,11 +243,11 @@ export const modules = [
       { task: 'Each image loads correctly', completed: false },
     ],
     codingPlan: `<img src="/characters/Alvin.jpg" width="100">
-<img src="/characters/Brittany.jpg" width="100">
-<img src="/characters/Simon.jpg" width="100">`,
-    starterCode: `<img src="https://via.placeholder.com/100" />
-<img src="https://via.placeholder.com/100" />
-<img src="https://via.placeholder.com/100" />`,
+<img src="/characters/Simon.jpg" width="100">
+<img src="/characters/Theodore.jpg" width="100">`,
+    starterCode: `<img src="/characters/Alvin.jpg" width="100">
+<img src="/characters/Simon.jpg" width="100">
+<img src="/characters/Theodore.jpg" width="100">`,
     tags: [
       { name: '<img>', emoji: '🖼️', module: 2 },
     ],
