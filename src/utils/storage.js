@@ -100,3 +100,24 @@ export const getAllProgress = () => {
     return { completedModules: [], scores: {} }
   }
 }
+
+// SUPABASE STORAGE PREPARATION (Placeholders)
+// Project: chelseachi04's Project
+
+export const saveFilesToSupabase = async (projectId, files) => {
+  console.log(`[Supabase] Saving files for project ${projectId}:`, files)
+  // TODO: Implement actual Supabase storage logic here
+  // const { data, error } = await supabase.storage.from('projects').upload(...)
+  return { success: true }
+}
+
+export const loadFilesFromSupabase = async (projectId) => {
+  console.log(`[Supabase] Loading files for project ${projectId}`)
+  // TODO: Implement actual Supabase retrieval logic here
+  // const { data, error } = await supabase.storage.from('projects').download(...)
+  return null
+}
+
+export const saveProjectMetadata = async (metadata) => {
+  console.log('[Supabase] Saving project metadata:', metadata)
+}

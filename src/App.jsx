@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import HomeScreen from './components/HomeScreen'
 import ModuleSelector from './components/ModuleSelector'
 import TourGuide from './components/TourGuide'
@@ -9,14 +9,19 @@ import Quiz from './components/Quiz'
 import ThemeToggle from './components/ThemeToggle'
 import Guide from './components/Guide'
 import ClearConfirmModal from './components/ClearConfirmModal'
+import PlaygroundModal from './components/PlaygroundModal'
 import { modules } from './data/modules'
-import { saveModuleCode, loadModuleCode, isModuleUnlocked, saveQuizScore, loadQuizScore, markQuizPassed, unlockModule } from './utils/storage'
+import { saveModuleCode, loadModuleCode, saveQuizScore, loadQuizScore, markQuizPassed } from './utils/storage'
 import { validateHTMLStructure, isInsideBody } from './utils/codeValidator'
 import { formatHTML } from './utils/formatter'
+import { supabase } from './utils/supabase'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 import './style.css'
+import './playground.css'
 
 function App() {
-  const [theme, setTheme] = useState(() => {
+  const [theme] = useState(() => {
     return localStorage.getItem('kidCodeEditor_theme') || 'light'
   })
   const [view, setView] = useState('home') // 'home', 'quest', 'playground'
@@ -32,15 +37,33 @@ function App() {
   const [showQuiz, setShowQuiz] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const [code, setCode] = useState('')
+  const [playgroundFiles, setPlaygroundFiles] = useState(() => {
+    try {
+      const saved = localStorage.getItem('playground_files')
+      return saved ? JSON.parse(saved) : {
+        'index.html': '<!DOCTYPE html>\n<html>\n  <head>\n    <title>My Project</title>\n  </head>\n  <body>\n    <h1>Hello World!</h1>\n  </body>\n</html>',
+        'style.css': 'body {\n  background-color: #f0f8ff;\n  font-family: sans-serif;\n}\n\nh1 {\n  color: #ff69b4;\n}',
+        'script.js': '// Add your magic here!\nconsole.log("Welcome to the Playground!");'
+      }
+    } catch {
+      return { 'index.html': '', 'style.css': '', 'script.js': '' }
+    }
+  })
+  const [activeFile, setActiveFile] = useState('index.html')
   const [history, setHistory] = useState([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [validationError, setValidationError] = useState(null)
   const [customTourStep, setCustomTourStep] = useState(null)
-  const [studentName, setStudentName] = useState('Explorer')
+  const [studentName] = useState('Explorer')
   const [modulesList, setModulesList] = useState(modules)
   const [showSkeletonSample, setShowSkeletonSample] = useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
+  const [isSavingCloud, setIsSavingCloud] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [hasUnsavedCloudChanges, setHasUnsavedCloudChanges] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [pgModal, setPgModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: () => { }, onCancel: () => { } })
   const [tourGuideSeen, setTourGuideSeen] = useState(() => {
     try {
       const stored = localStorage.getItem('tourGuideSeen')
@@ -49,6 +72,18 @@ function App() {
       return new Set()
     }
   })
+
+  // Handle Before Unload
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedCloudChanges) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved work. Would you like to save before leaving?'
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedCloudChanges])
 
   // Initialize modules with unlock status from localStorage
   useEffect(() => {
@@ -73,7 +108,7 @@ function App() {
     setModulesList(updatedModules)
   }, [])
 
-  // Load code and reset history when module changes
+  // Load code and reset history when module or active file changes
   useEffect(() => {
     if (currentModule) {
       const savedCode = loadModuleCode(currentModule)
@@ -82,12 +117,13 @@ function App() {
       setHistory([initial])
       setHistoryIndex(0)
     } else if (view === 'playground') {
-      const savedPlayground = localStorage.getItem('playground_code') || ''
-      setCode(savedPlayground)
-      setHistory([savedPlayground])
+      const activeCode = playgroundFiles[activeFile] || ''
+      setCode(activeCode)
+      setHistory([activeCode])
       setHistoryIndex(0)
     }
-  }, [currentModule, view])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentModule, view, activeFile])
 
   // Auto-save code on every change
   const handleCodeChange = (newCode, skipHistory = false) => {
@@ -96,7 +132,9 @@ function App() {
     if (currentModule) {
       saveModuleCode(currentModule, newCode)
     } else if (view === 'playground') {
-      localStorage.setItem('playground_code', newCode)
+      const updatedFiles = { ...playgroundFiles, [activeFile]: newCode }
+      setPlaygroundFiles(updatedFiles)
+      localStorage.setItem('playground_files', JSON.stringify(updatedFiles))
     }
 
     if (!skipHistory) {
@@ -108,9 +146,91 @@ function App() {
       setHistoryIndex(newHistory.length - 1)
     }
 
-    // Validate HTML structure
-    const error = validateHTMLStructure(newCode)
-    setValidationError(error)
+    // Only validate HTML structure for HTML files
+    if (activeFile.endsWith('.html') || currentModule) {
+      const error = validateHTMLStructure(newCode)
+      setValidationError(error)
+    } else {
+      setValidationError(null)
+    }
+    setHasUnsavedCloudChanges(true)
+  }
+
+  const handleSaveCloud = async () => {
+    setIsSavingCloud(true)
+    try {
+      const htmlContent = view === 'playground' ? playgroundFiles['index.html'] || '' : code
+      const cssContent = view === 'playground' ? playgroundFiles['style.css'] || '' : ''
+      const projectName = view === 'playground' ? 'Playground Project' : (modulesList.find(m => m.id === currentModule)?.name || 'Code Quest Project')
+
+      // Optimization: Delete previous saves for this project name to keep DB clean
+      await supabase
+        .from('student_projects')
+        .delete()
+        .eq('project_name', projectName)
+
+      const { error } = await supabase
+        .from('student_projects')
+        .insert([
+          {
+            html_content: htmlContent,
+            css_content: cssContent,
+            project_name: projectName
+          }
+        ])
+
+      if (error) throw error
+
+      setHasUnsavedCloudChanges(false)
+      setToastMessage('Success! Work saved to cloud ☁️')
+      setTimeout(() => setToastMessage(''), 3000)
+    } catch (err) {
+      console.error('Error saving to cloud:', err)
+      setToastMessage('Error saving to cloud ❌')
+      setTimeout(() => setToastMessage(''), 3000)
+    } finally {
+      setIsSavingCloud(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    try {
+      const zip = new JSZip()
+      let projName = 'MyCodeLab_Project'
+
+      if (view === 'playground') {
+        projName = 'MyCodeLab_Playground'
+      } else {
+        const foundModule = modulesList.find(m => m.id === currentModule)
+        if (foundModule && foundModule.name) {
+          projName = foundModule.name.replace(/\s+/g, '_')
+        }
+      }
+
+      const projectName = projName
+
+      if (view === 'playground') {
+        Object.entries(playgroundFiles).forEach(([fileName, fileContent]) => {
+          zip.file(fileName, fileContent)
+        })
+      } else {
+        zip.file('index.html', code || '')
+        // We don't have a separate CSS file in Quest mode usually, but if we did, we'd add it here.
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' })
+      saveAs(content, `${projectName}.zip`)
+
+      setToastMessage('Success! Project downloaded 📥')
+      setTimeout(() => setToastMessage(''), 3000)
+    } catch (err) {
+      console.error('Error downloading project:', err)
+      setToastMessage('Error downloading project ❌')
+      setTimeout(() => setToastMessage(''), 3000)
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   const undo = () => {
@@ -145,6 +265,46 @@ function App() {
     handleCodeChange('')
     setShowClearModal(false)
   }
+
+  // Handle file deletion in playground
+  const handleDeleteFile = (fileName, e) => {
+    e.stopPropagation(); // Prevent tab switching when clicking delete
+
+    // Prevent deletion of the last file
+    const fileCount = Object.keys(playgroundFiles).length;
+    if (fileCount <= 1) {
+      setPgModal({
+        isOpen: true,
+        type: 'alert',
+        title: 'Oops! 🏠',
+        message: 'You need at least one file in your playground!',
+        onConfirm: () => setPgModal(prev => ({ ...prev, isOpen: false })),
+        onCancel: () => setPgModal(prev => ({ ...prev, isOpen: false }))
+      });
+      return;
+    }
+
+    setPgModal({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Wait! 🗑️',
+      message: `Are you sure you want to delete ${fileName}?`,
+      onConfirm: () => {
+        const updatedFiles = { ...playgroundFiles };
+        delete updatedFiles[fileName];
+        setPlaygroundFiles(updatedFiles);
+        localStorage.setItem('playground_files', JSON.stringify(updatedFiles));
+
+        if (activeFile === fileName) {
+          const remainingFiles = Object.keys(updatedFiles);
+          const nextFile = remainingFiles.includes('index.html') ? 'index.html' : remainingFiles[0];
+          setActiveFile(nextFile);
+        }
+        setPgModal(prev => ({ ...prev, isOpen: false }));
+      },
+      onCancel: () => setPgModal(prev => ({ ...prev, isOpen: false }))
+    });
+  };
 
   // Handle tag and character insertion
   const handleInsertTag = (tagContent, cursorPos = null, isCharacter = false) => {
@@ -270,7 +430,12 @@ function App() {
     setShowSkeletonSample(false)
   }
 
-  const handleBackToHome = () => {
+  const handleBackToHome = async () => {
+    if (hasUnsavedCloudChanges) {
+      if (window.confirm('You have unsaved work. Would you like to save before leaving?')) {
+        await handleSaveCloud()
+      }
+    }
     setView('home')
     setCurrentModule(null)
     setShowQuiz(false)
@@ -370,7 +535,7 @@ function App() {
           </div>
           <div className="panel panel-center" id="code-editor-panel">
             <h2 className="panel-title">
-              ✏️ {isPlayground ? 'Playground Editor' : 'Code Editor'}
+              ✏️ {isPlayground ? `Editor - ${activeFile}` : 'Code Editor'}
               <div className="editor-controls-group">
                 <button className="toolbar-btn" onClick={undo} disabled={historyIndex <= 0}>↩️ Undo</button>
                 <button className="toolbar-btn" onClick={redo} disabled={historyIndex >= history.length - 1}>↪️ Redo</button>
@@ -382,13 +547,67 @@ function App() {
                 )}
               </div>
             </h2>
+
+            {isPlayground && (
+              <div className="file-explorer-tab">
+                {Object.keys(playgroundFiles).map(fileName => (
+                  <div key={fileName} className="file-tab-container">
+                    <button
+                      className={`file-tab ${activeFile === fileName ? 'active' : ''}`}
+                      onClick={() => setActiveFile(fileName)}
+                    >
+                      {fileName.endsWith('.html') ? '📄' : fileName.endsWith('.css') ? '🎨' : '⚡'} {fileName}
+                    </button>
+                    <button
+                      className="delete-file-btn"
+                      onClick={(e) => handleDeleteFile(fileName, e)}
+                      title={`Delete ${fileName}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="file-tab add-file-btn"
+                  onClick={() => {
+                    setPgModal({
+                      isOpen: true,
+                      type: 'prompt',
+                      title: 'New Magic File! ✨',
+                      message: 'What should we call your new file?',
+                      onConfirm: (name) => {
+                        if (name && !playgroundFiles[name]) {
+                          const ext = name.split('.').pop();
+                          const defaultContent = ext === 'css' ? '/* New Styles */' : ext === 'js' ? '// New Logic' : '<!-- New HTML -->';
+                          const updatedFiles = { ...playgroundFiles, [name]: defaultContent }
+                          setPlaygroundFiles(updatedFiles)
+                          setActiveFile(name)
+                          localStorage.setItem('playground_files', JSON.stringify(updatedFiles))
+                        }
+                        setPgModal(prev => ({ ...prev, isOpen: false }));
+                      },
+                      onCancel: () => setPgModal(prev => ({ ...prev, isOpen: false }))
+                    });
+                  }}
+                >
+                  ➕ New File
+                </button>
+              </div>
+            )}
+
             {showSkeletonSample && !isPlayground && activeModule?.codingPlan && (
               <div className="skeleton-sample-box">
                 <strong>🏠 House Plan:</strong>
                 <pre style={{ margin: '5px 0 0' }}>{activeModule.codingPlan}</pre>
               </div>
             )}
-            <CodeEditor code={code} setCode={handleCodeChange} onInsertTag={handleInsertTag} />
+            <CodeEditor
+              code={code}
+              setCode={handleCodeChange}
+              onInsertTag={handleInsertTag}
+              fileName={activeFile}
+              language={activeFile.split('.').pop()}
+            />
           </div>
         </div>
 
@@ -413,7 +632,16 @@ function App() {
                 <p>Fix your code to see the magic happen!</p>
               </div>
             ) : (
-              <LivePreview code={code} onRun={handleRunCheck} />
+              <LivePreview
+                code={code}
+                onRun={handleRunCheck}
+                isPlayground={isPlayground}
+                files={playgroundFiles}
+                onSaveCloud={handleSaveCloud}
+                isSavingCloud={isSavingCloud}
+                onDownload={handleDownload}
+                isDownloading={isDownloading}
+              />
             )}
           </div>
         </div>
@@ -426,6 +654,27 @@ function App() {
         onConfirm={handleConfirmClear}
         onCancel={() => setShowClearModal(false)}
       />
+
+      <PlaygroundModal
+        isOpen={pgModal.isOpen}
+        type={pgModal.type}
+        title={pgModal.title}
+        message={pgModal.message}
+        onConfirm={pgModal.onConfirm}
+        onCancel={pgModal.onCancel}
+      />
+
+      {toastMessage && (
+        <div style={{
+          position: 'fixed', bottom: '20px', right: '20px',
+          backgroundColor: toastMessage.includes('Error') ? '#ff4d4f' : '#4CAF50',
+          color: 'white', padding: '15px 25px', borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999,
+          fontWeight: 'bold', animation: 'slideIn 0.3s ease-out'
+        }}>
+          {toastMessage}
+        </div>
+      )}
     </>
   )
 }

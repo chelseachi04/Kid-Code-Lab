@@ -565,6 +565,17 @@ body {
   align-items: center;
 }
 
+.preview-controls {
+  overflow-x: auto;
+  padding-bottom: 4px;
+  max-width: 65%;
+  scrollbar-width: thin;
+}
+
+.preview-controls::-webkit-scrollbar {
+  height: 6px;
+}
+
 .toolbar-btn {
   padding: 4px 10px;
   border-radius: 8px;

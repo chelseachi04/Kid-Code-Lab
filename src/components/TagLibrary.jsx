@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { cssStyleGroups, cssRecipes } from '../data/styles'
+import PlaygroundModal from './PlaygroundModal'
 
 function TagLibrary({ onInsertTag, modules = [], currentModuleId, isPlayground = false }) {
   // Collect all tags from modules up to and including the current module
@@ -19,9 +21,73 @@ function TagLibrary({ onInsertTag, modules = [], currentModuleId, isPlayground =
     }
   })
 
+  // New Tag Groups for Advanced Curriculum
+  const advancedTagGroups = [
+    {
+      name: 'Formatting',
+      emoji: '🖋️',
+      tags: [
+        { name: '<b>', emoji: 'B' },
+        { name: '<strong>', emoji: '💪' },
+        { name: '<i>', emoji: 'I' },
+        { name: '<em>', emoji: '✨' },
+        { name: '<mark>', emoji: '🖊️' },
+        { name: '<small>', emoji: '🐜' },
+        { name: '<sub>', emoji: '⬇️' },
+        { name: '<sup>', emoji: '⬆️' },
+        { name: '<span>', emoji: '📏' },
+      ]
+    },
+    {
+      name: 'Lists',
+      emoji: '📋',
+      tags: [
+        { name: '<ol>', emoji: '🔢' },
+        { name: '<ul>', emoji: '📝' },
+        { name: '<li>', emoji: '✓' },
+      ]
+    },
+    {
+      name: 'Tables',
+      emoji: '📊',
+      tags: [
+        { name: '<table>', emoji: '🧱' },
+        { name: '<tr>', emoji: '➖' },
+        { name: '<th>', emoji: '🔝' },
+        { name: '<td>', emoji: '🔲' },
+      ]
+    },
+    {
+      name: 'Forms',
+      emoji: '📝',
+      tags: [
+        { name: '<form>', emoji: '📥' },
+        { name: '<input>', emoji: '⌨️' },
+        { name: '<label>', emoji: '🏷️' },
+      ]
+    },
+    {
+      name: 'Advanced',
+      emoji: '⚙️',
+      tags: [
+        { name: '<style>', emoji: '🎨' },
+      ]
+    }
+  ]
+
   // State to track if sections are expanded
   const [showTags, setShowTags] = useState(true)
   const [showCharacters, setShowCharacters] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState({})
+  const [activeTab, setActiveTab] = useState('html') // 'html' or 'css'
+  const [recipeModal, setRecipeModal] = useState({ isOpen: false, title: '', code: '' })
+
+  const toggleGroup = (groupName) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }))
+  }
 
   const isModule1 = !isPlayground && Number(currentModuleId) === 1
 
@@ -30,79 +96,217 @@ function TagLibrary({ onInsertTag, modules = [], currentModuleId, isPlayground =
     e.dataTransfer.setData('text/plain', tagName)
   }
 
-  const characters = [
-    { name: 'Alvin', filename: 'Alvin.jpg' },
-    { name: 'Ben', filename: 'Ben.jpg' },
-    { name: 'Bingo', filename: 'Bingo.jpg' },
-    { name: 'Bluey', filename: 'Bluey.jpg' },
-    { name: 'Lightning McQueen', filename: 'Cars Lightning McQueen.jpg' },
-    { name: 'Chase', filename: 'Chase.jpg' },
-    { name: 'Dora', filename: 'Dora.jpg' },
-    { name: 'Duck', filename: 'Duck.jpg' },
-    { name: 'James', filename: 'James.jpg' },
-    { name: 'Judy Hopps', filename: 'Judy Hopps.jpg' },
-    { name: 'Luigi', filename: 'Luigi.jpg' },
-    { name: 'Mario (Happy)', filename: 'Mario!.jpg' },
-    { name: 'Mario', filename: 'Mario.jpg' },
-    { name: 'Mark', filename: 'Mark.jpg' },
-    { name: 'Marshall', filename: 'Marshall.jpg' },
-    { name: 'Nick', filename: 'Nick.jpg' },
-    { name: 'PIKACHU', filename: 'PIKACHU.jpg' },
-    { name: 'Panda', filename: 'Panda.jpg' },
-    { name: 'Patrick Star', filename: 'Patrick.jpg' },
-    { name: 'Paul', filename: 'Paul.jpg' },
-    { name: 'Peter', filename: 'Peter.jpg' },
-    { name: 'Pup Wall Decal', filename: 'Pup Wall Decal.jpg' },
-    { name: 'Rider', filename: 'Rider.jpg' },
-    { name: 'Rita', filename: 'Rita.jpg' },
-    { name: 'Rocky', filename: 'rocky.jpg' },
-    { name: 'Rubble', filename: 'Rubble.jpg' },
-    { name: 'Simon', filename: 'Simon.jpg' },
-    { name: 'Skye', filename: 'Skye.jpg' },
-    { name: 'Sonic', filename: 'Sonic.png' },
-    { name: 'SpongeBob', filename: 'Spongbob.jpg' },
-    { name: 'Tanjiro', filename: 'Tanjiro.jpg' },
-    { name: 'Theodore', filename: 'Theodore.jpg' },
-    { name: 'Toad', filename: 'Toad.jpg' },
-    { name: 'Tom', filename: 'Tom.jpg' },
-    { name: 'Tracker', filename: 'Tracker.jpg' },
-    { name: 'Zuma', filename: 'Zuma.jpg' },
-    { name: 'Mystery Friend', filename: 'download (2).jpg' },
-  ]
+  const handleTagClick = (tagName) => {
+    if (!isPlayground && cssRecipes[tagName]) {
+      // Show recipe for Code Quest
+      setRecipeModal({
+        isOpen: true,
+        title: cssRecipes[tagName].title,
+        code: cssRecipes[tagName].code
+      });
+    } else {
+      onInsertTag(tagName);
+    }
+  }
 
   return (
     <div className="tag-library">
-      <div className="tag-module-section">
-        <button
-          className="tag-module-header"
-          onClick={() => setShowTags(!showTags)}
-          title={showTags ? 'Collapse' : 'Expand'}
-        >
-          <span className="module-folder-icon">
-            {showTags ? '📂' : '📁'}
-          </span>
-          <span className="module-name">Available Tags</span>
-          <span className="tag-count">({cumulativeTags.length})</span>
-        </button>
-
-        {showTags && (
-          <div className="tag-module-content show">
-            {cumulativeTags.map((tag) => (
-              <button
-                key={tag.name}
-                className="tag-button"
-                onClick={() => onInsertTag(tag.name)}
-                draggable
-                onDragStart={(e) => handleDragStart(e, tag.name)}
-                title={`Click or drag to insert ${tag.name}`}
-              >
-                <span className="tag-emoji">{tag.emoji}</span>
-                <span className="tag-name">{tag.name}</span>
-              </button>
-            ))}
+      {/* Recipe Modal for Code Quest */}
+      <PlaygroundModal
+        isOpen={recipeModal.isOpen}
+        type="alert"
+        title={recipeModal.title}
+        message={
+          <div className="recipe-box">
+            <p>Here's your professional recipe: 👨‍🍳</p>
+            <pre className="recipe-code">{recipeModal.code}</pre>
+            <p>Click OK to add this magic to your code!</p>
           </div>
-        )}
-      </div>
+        }
+        onConfirm={() => {
+          onInsertTag(recipeModal.code);
+          setRecipeModal({ isOpen: false, title: '', code: '' });
+        }}
+        onCancel={() => setRecipeModal({ isOpen: false, title: '', code: '' })}
+      />
+
+      {!isPlayground ? (
+        // Code Quest View: Show cumulative tags from modules + Styles if needed
+        <div className="tag-module-section">
+          <div className="quest-tag-tabs">
+            <button
+              className={`quest-tab ${activeTab === 'html' ? 'active' : ''}`}
+              onClick={() => setActiveTab('html')}
+            >
+              🏠 HTML Tags
+            </button>
+            <button
+              className={`quest-tab ${activeTab === 'css' ? 'active' : ''}`}
+              onClick={() => setActiveTab('css')}
+            >
+              🎨 Styles
+            </button>
+          </div>
+
+          <button
+            className="tag-module-header"
+            onClick={() => setShowTags(!showTags)}
+            title={showTags ? 'Collapse' : 'Expand'}
+          >
+            <span className="module-folder-icon">
+              {showTags ? '📂' : '📁'}
+            </span>
+            <span className="module-name">
+              {activeTab === 'html' ? 'Available Tags' : 'Professional Styles'}
+            </span>
+            <span className="tag-count">
+              ({activeTab === 'html' ? cumulativeTags.length : cssStyleGroups.reduce((acc, g) => acc + g.styles.length, 0)})
+            </span>
+          </button>
+
+          {showTags && (
+            <div className="tag-module-content show">
+              {activeTab === 'html' ? (
+                cumulativeTags.map((tag) => (
+                  <button
+                    key={tag.name}
+                    className="tag-button"
+                    onClick={() => handleTagClick(tag.name)}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, tag.name)}
+                    title={`Click or drag to insert ${tag.name}`}
+                  >
+                    <span className="tag-emoji">{tag.emoji}</span>
+                    <span className="tag-name">{tag.name}</span>
+                  </button>
+                ))
+              ) : (
+                cssStyleGroups.map(group => (
+                  <div key={group.name} className="style-subgroup">
+                    <div className="style-subgroup-title">{group.emoji} {group.name}</div>
+                    {group.styles.map(style => (
+                      <button
+                        key={style.name}
+                        className="tag-button css-style-btn"
+                        onClick={() => handleTagClick(style.name)}
+                        title={style.description}
+                      >
+                        <span className="tag-emoji">{style.emoji}</span>
+                        <span className="tag-name">{style.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        // Playground/Sandbox View: Show grouped tags
+        <div className="playground-tags-container">
+          <div className="playground-folders">
+            {/* HTML FOLDER */}
+            <div className="tag-module-section">
+              <button
+                className="tag-module-header main-folder"
+                onClick={() => toggleGroup('html_main')}
+              >
+                <span className="module-folder-icon">
+                  {expandedGroups['html_main'] ? '📂' : '📁'}
+                </span>
+                <span className="module-name">🌐 HTML Elements</span>
+              </button>
+
+              {expandedGroups['html_main'] && (
+                <div className="nested-folders">
+                  {advancedTagGroups.map((group) => (
+                    <div key={group.name} className="tag-module-section">
+                      <button
+                        className="tag-module-header"
+                        onClick={() => toggleGroup(group.name)}
+                        title={expandedGroups[group.name] ? 'Collapse' : 'Expand'}
+                      >
+                        <span className="module-folder-icon">
+                          {expandedGroups[group.name] ? '📂' : '📁'}
+                        </span>
+                        <span className="module-name">{group.emoji} {group.name}</span>
+                        <span className="tag-count">({group.tags.length})</span>
+                      </button>
+
+                      {expandedGroups[group.name] && (
+                        <div className="tag-module-content show">
+                          {group.tags.map((tag) => (
+                            <button
+                              key={tag.name}
+                              className="tag-button"
+                              onClick={() => onInsertTag(tag.name)}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, tag.name)}
+                              title={`Click or drag to insert ${tag.name}`}
+                            >
+                              <span className="tag-emoji">{tag.emoji}</span>
+                              <span className="tag-name">{tag.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CSS FOLDER */}
+            <div className="tag-module-section">
+              <button
+                className="tag-module-header main-folder css-folder"
+                onClick={() => toggleGroup('css_main')}
+              >
+                <span className="module-folder-icon">
+                  {expandedGroups['css_main'] ? '📂' : '📁'}
+                </span>
+                <span className="module-name">🎨 Style Library</span>
+              </button>
+
+              {expandedGroups['css_main'] && (
+                <div className="nested-folders">
+                  {cssStyleGroups.map((group) => (
+                    <div key={group.name} className="tag-module-section">
+                      <button
+                        className="tag-module-header"
+                        onClick={() => toggleGroup(group.name)}
+                        title={expandedGroups[group.name] ? 'Collapse' : 'Expand'}
+                      >
+                        <span className="module-folder-icon">
+                          {expandedGroups[group.name] ? '📂' : '📁'}
+                        </span>
+                        <span className="module-name">{group.emoji} {group.name}</span>
+                        <span className="tag-count">({group.styles.length})</span>
+                      </button>
+
+                      {expandedGroups[group.name] && (
+                        <div className="tag-module-content show style-grid">
+                          {group.styles.map((style) => (
+                            <button
+                              key={style.name}
+                              className="tag-button style-card"
+                              onClick={() => onInsertTag(style.name)}
+                              title={style.description}
+                            >
+                              <span className="tag-emoji">{style.emoji}</span>
+                              <span className="tag-name">{style.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="tag-module-section">
         <button

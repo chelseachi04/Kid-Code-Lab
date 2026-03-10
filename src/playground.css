@@ -1,0 +1,421 @@
+/* FILE EXPLORER TABS */
+.file-explorer-tab {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: #1e293b;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    overflow-x: auto;
+    scrollbar-width: thin;
+    margin-bottom: 10px;
+}
+
+.file-tab {
+    padding: 6px 16px;
+    background: #334155;
+    border: 1.5px solid white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    color: white;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.file-tab:hover {
+    background: #1e293b;
+    transform: translateY(-1px);
+}
+
+.file-tab.active {
+    background: #667eea;
+    color: white;
+    border-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.add-file-btn {
+    border-style: dashed;
+    background: transparent;
+}
+
+.file-tab-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: #334155;
+    border: 1.5px solid white;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+
+.file-tab-container:hover {
+    background: #1e293b;
+    transform: translateY(-1px);
+}
+
+.file-tab-container:has(.file-tab.active) {
+    background: #667eea;
+    border-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.file-tab {
+    padding: 6px 10px 6px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    color: white;
+    white-space: nowrap;
+}
+
+.delete-file-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: all 0.2s ease;
+}
+
+.delete-file-btn:hover {
+    background: #ef4444;
+    transform: scale(1.1);
+}
+
+/* FANCY PLAYGROUND MODAL */
+.pg-modal-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px;
+    padding: 30px;
+    width: 90%;
+    max-width: 450px;
+    color: white;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.pg-modal-content {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.pg-modal-character img {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    border: 3px solid white;
+    object-fit: cover;
+}
+
+.pg-modal-text h2 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.pg-modal-text p {
+    margin: 0;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+.pg-modal-input {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.pg-modal-input:focus {
+    border-color: #667eea;
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
+}
+
+.pg-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Modal Types Coloring */
+.pg-modal-card.confirm .confirm-btn {
+    background: #ef4444;
+    /* Red for delete */
+}
+
+.pg-modal-card.prompt .confirm-btn {
+    background: #10b981;
+    /* Green for create */
+}
+
+.pg-modal-card.alert .confirm-btn {
+    background: #667eea;
+    /* Blue for alert */
+}
+
+/* STYLE LIBRARY UPGRADE */
+.quest-tag-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 2px;
+}
+
+.quest-tab {
+    flex: 1;
+    padding: 8px 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 10px;
+}
+
+.quest-tab.active {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.style-subgroup {
+    width: 100%;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.style-subgroup-title {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #667eea;
+    padding: 0 4px;
+}
+
+.main-folder {
+    background: #0f172a !important;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.1) !important;
+    font-size: 16px !important;
+    padding: 15px 20px !important;
+}
+
+.main-folder.css-folder {
+    border-left: 5px solid #10b981;
+}
+
+.nested-folders {
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.style-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.style-card {
+    height: 100%;
+    width: 100%;
+    white-space: normal !important;
+    background: #1e293b !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+    text-align: left !important;
+    padding: 10px !important;
+    font-size: 11px !important;
+}
+
+.style-card:hover {
+    border-color: #667eea !important;
+    background: #334155 !important;
+}
+
+.recipe-box {
+    text-align: left;
+    margin-top: 10px;
+}
+
+.recipe-code {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #10b981;
+    margin: 10px 0;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    overflow-x: auto;
+}
+
+/* AUTOCOMPLETE DROPDOWN */
+.autocomplete-dropdown {
+    position: absolute;
+    top: 60px;
+    /* Offset from cursor simulation */
+    left: 40px;
+    background: #1e293b;
+    border: 2px solid #667eea;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    width: 280px;
+    overflow: hidden;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: #334155;
+}
+
+.suggestion-item.active {
+    border-left: 4px solid #667eea;
+    padding-left: 12px;
+}
+
+.suggestion-emoji {
+    font-size: 18px;
+    min-width: 24px;
+}
+
+.suggestion-name {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: #667eea;
+    flex: 1;
+}
+
+.suggestion-desc {
+    font-size: 11px;
+    opacity: 0.6;
+    color: white;
+}
+
+/* SYNTAX HIGHLIGHTING - CSS/JS */
+[data-theme='light'] .code-property {
+    color: #d73a49;
+}
+
+[data-theme='light'] .code-value {
+    color: #005cc5;
+}
+
+[data-theme='light'] .code-selector {
+    color: #6f42c1;
+    font-weight: bold;
+}
+
+[data-theme='light'] .code-keyword {
+    color: #d73a49;
+    font-weight: bold;
+}
+
+[data-theme='light'] .code-string {
+    color: #032f62;
+}
+
+[data-theme='light'] .code-comment {
+    color: #6a737d;
+    font-style: italic;
+}
+
+[data-theme='dark'] .code-property {
+    color: #ff7b72;
+}
+
+[data-theme='dark'] .code-value {
+    color: #a5d6ff;
+}
+
+[data-theme='dark'] .code-selector {
+    color: #d2a8ff;
+    font-weight: bold;
+}
+
+[data-theme='dark'] .code-keyword {
+    color: #ff7b72;
+    font-weight: bold;
+}
+
+[data-theme='dark'] .code-string {
+    color: #a5d6ff;
+}
+
+[data-theme='dark'] .code-comment {
+    color: #8b949e;
+    font-style: italic;
+}
