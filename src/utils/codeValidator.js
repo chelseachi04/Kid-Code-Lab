@@ -1,54 +1,95 @@
 /**
- * Strict HTML Structure Validator
- * Enforces:
- * 1. Only one <html>, <head>, <title>, and <body> tag.
- * 2. All content must be inside <html>.
- * 3. No tags should be outside <html>.
+ * HTML Structure Validator
+ * Returns { message, line } so that the editor can scroll to and highlight errors.
+ * Uses a stack-based approach to find the exact unclosed tag line.
  */
 
-export const validateHTMLStructure = (code) => {
-    const errors = [];
-    const cleanCode = code.trim();
+// These tags are self-closing/void and never need a closing partner
+const VOID_TAGS = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'area',
+    'base', 'col', 'embed', 'param', 'source', 'track', 'wbr']);
 
+export const validateHTMLStructure = (code) => {
+    const cleanCode = code.trim();
     if (!cleanCode) return null;
 
-    // 1. Check for multiple instances of primary tags
-    const primaryTags = ['html', 'head', 'title', 'body'];
-    primaryTags.forEach(tag => {
-        const openTagRegex = new RegExp(`<\\s*${tag}\\b[^>]*>`, 'gi');
-        const closeTagRegex = new RegExp(`</${tag}>`, 'gi');
+    const lines = cleanCode.split('\n');
 
-        const openCount = (cleanCode.match(openTagRegex) || []).length;
-        const closeCount = (cleanCode.match(closeTagRegex) || []).length;
-
-        if (openCount > 1) {
-            errors.push(`Oops! You have more than one <${tag}> tag. You only need one!`);
+    /**
+     * Stack-based check: find the exact line where an opening tag was left unclosed.
+     */
+    const findUnclosedOpenTag = (tag) => {
+        const stack = [];
+        const openRe = new RegExp(`<\\s*${tag}(\\s[^>]*)?>`, 'gi');
+        const closeRe = new RegExp(`<\\/${tag}\\s*>`, 'gi');
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            // Find all opens and closes on this line in order
+            const events = [];
+            let m;
+            openRe.lastIndex = 0;
+            while ((m = openRe.exec(line)) !== null) events.push({ type: 'open', col: m.index, lineNo: i + 1 });
+            closeRe.lastIndex = 0;
+            while ((m = closeRe.exec(line)) !== null) events.push({ type: 'close', col: m.index });
+            events.sort((a, b) => a.col - b.col);
+            for (const ev of events) {
+                if (ev.type === 'open') stack.push(ev.lineNo);
+                else if (ev.type === 'close') stack.pop();
+            }
         }
-        if (closeCount > 1) {
-            errors.push(`Oops! You have more than one </${tag}> tag. You only need one!`);
+        return stack.length > 0 ? stack[0] : null; // earliest unclosed open tag
+    };
+
+    /**
+     * Find line of an extra closing tag (more closes than opens).
+     */
+    const findExtraCloseTag = (tag) => {
+        let openCount = 0;
+        const openRe = new RegExp(`<\\s*${tag}(\\s[^>]*)?>`, 'gi');
+        const closeRe = new RegExp(`<\\/${tag}\\s*>`, 'gi');
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            openRe.lastIndex = 0;
+            while (openRe.exec(line)) openCount++;
+            closeRe.lastIndex = 0;
+            let m;
+            while ((m = closeRe.exec(line)) !== null) {
+                openCount--;
+                if (openCount < 0) return i + 1;
+            }
         }
-    });
+        return null;
+    };
 
-    // 2. Check if content starts with <html> and ends with </html> (ignoring doctype)
-    const codeWithoutDoctype = cleanCode.replace(/^<!DOCTYPE html>/i, '').trim();
+    // Paired tags that always need a closing friend
+    const pairedTags = ['b', 'strong', 'i', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'p', 'div', 'span', 'ul', 'ol', 'li', 'a', 'table', 'tr', 'td', 'th',
+        'head', 'body', 'title', 'html', 'form', 'label', 'section', 'mark',
+        'header', 'footer', 'main', 'nav', 'article', 'aside'];
 
-    const startsWithHtml = /<html[^>]*>/i.test(codeWithoutDoctype);
-    const endsWithHtml = /<\/html>\s*$/i.test(codeWithoutDoctype);
+    for (const tag of pairedTags) {
+        if (VOID_TAGS.has(tag)) continue; // skip void tags just in case
+        const openRe = new RegExp(`<\\s*${tag}(\\s[^>]*)?>`, 'gi');
+        const closeRe = new RegExp(`<\\/${tag}\\s*>`, 'gi');
+        const openCount = (cleanCode.match(openRe) || []).length;
+        const closeCount = (cleanCode.match(closeRe) || []).length;
 
-    if (!startsWithHtml || !endsWithHtml) {
-        errors.push("Everything should be inside your <html>house</html>! Don't leave tags standing outside.");
+        if (openCount > closeCount) {
+            const line = findUnclosedOpenTag(tag);
+            return {
+                message: `😊 Your \`<${tag}>\` tag is missing a closing friend \`</${tag}>\`!`,
+                line
+            };
+        }
+        if (closeCount > openCount) {
+            const line = findExtraCloseTag(tag);
+            return {
+                message: `Oops! You have an extra \`</${tag}>\` with no matching \`<${tag}>\` to close! 🤔`,
+                line
+            };
+        }
     }
 
-    // 3. Simple containment check using DOMParser (browser only, but we are in a React app)
-    if (typeof window !== 'undefined') {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(cleanCode, 'text/html');
-
-        // If the parser had to move elements out of body/head to fix it, it might be invalid for our strict rules
-        // But for a kid's editor, we mainly want to enforce the visually obvious structure.
-    }
-
-    return errors.length > 0 ? errors[0] : null; // Return first error for simplicity
+    return null; // All good!
 };
 
 /**

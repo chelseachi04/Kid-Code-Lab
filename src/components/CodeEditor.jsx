@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { formatHTML } from '../utils/formatter'
 import { cssStyleGroups } from '../data/styles'
 
-function CodeEditor({ code, setCode, onInsertTag, language = 'html', fileName }) {
+function CodeEditor({ code, setCode, onInsertTag, language = 'html', fileName, errorLine }) {
   const textareaRef = useRef(null)
   const backdropRef = useRef(null)
   const [suggestions, setSuggestions] = useState([])
@@ -240,6 +240,17 @@ function CodeEditor({ code, setCode, onInsertTag, language = 'html', fileName })
     return highlighted
   }
 
+  // Highlight error line in backdrop
+  const getHighlightedCodeWithError = (text) => {
+    const highlighted = getHighlightedCode(text)
+    if (!errorLine) return highlighted
+    const lines = highlighted.split('\n')
+    if (errorLine > 0 && errorLine <= lines.length) {
+      lines[errorLine - 1] = `<mark class="error-line-highlight">${lines[errorLine - 1]}</mark>`
+    }
+    return lines.join('\n')
+  }
+
   return (
     <div className="code-editor-container">
       <div className="code-editor-wrapper">
@@ -247,7 +258,7 @@ function CodeEditor({ code, setCode, onInsertTag, language = 'html', fileName })
           ref={backdropRef}
           className="code-editor-backdrop"
           aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: getHighlightedCode(code) + '\n' }}
+          dangerouslySetInnerHTML={{ __html: getHighlightedCodeWithError(code) + '\n' }}
         />
         <textarea
           ref={textareaRef}

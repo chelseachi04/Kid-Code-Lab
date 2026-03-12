@@ -544,25 +544,32 @@ body {
 }
 
 .panel-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   color: var(--text-primary);
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  /* Prevents title from breaking */
+  gap: 6px;
+  flex-wrap: wrap;
+  overflow: hidden;
 }
 
 /* EDITOR CONTROLS IN HEADER */
 .editor-controls-group {
   display: flex;
-  gap: 4px;
-  /* Ultra tight gap */
+  gap: 3px;
   margin-left: auto;
   align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+
+.editor-controls-group::-webkit-scrollbar {
+  display: none;
 }
 
 .preview-controls {
@@ -577,18 +584,18 @@ body {
 }
 
 .toolbar-btn {
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 8px;
   border: 1.5px solid white;
   background: #334155;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   white-space: nowrap;
   flex-shrink: 0;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -2438,6 +2445,43 @@ body {
   max-width: 80%;
 }
 
+/* ERROR LINE HIGHLIGHT */
+mark.error-line-highlight {
+  background: rgba(255, 80, 80, 0.25);
+  border-radius: 3px;
+  display: inline-block;
+  width: 100%;
+  animation: errorPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes errorPulse {
+  from {
+    background: rgba(255, 80, 80, 0.15);
+  }
+
+  to {
+    background: rgba(255, 80, 80, 0.4);
+  }
+}
+
+.error-goto-btn {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(238, 90, 36, 0.4);
+}
+
+.error-goto-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(238, 90, 36, 0.6);
+}
+
 /* CHARACTER GALLERY */
 .character-gallery-header {
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
@@ -2787,4 +2831,92 @@ body {
   width: 100%;
   height: 100%;
   border: none;
+}
+
+/* ── FULLSCREEN EDITOR OVERLAY ── */
+.fullscreen-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.fullscreen-editor-card {
+  background: #1a1a2e;
+  width: 96%;
+  height: 92vh;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  animation: scaleUp 0.25s ease;
+}
+
+.fullscreen-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: #0f0f1e;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+  color: #e0e0ff;
+  font-size: 15px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.fullscreen-editor-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-editor-body .code-editor-container {
+  flex: 1;
+  height: 100%;
+}
+
+.fullscreen-editor-body .code-editor-wrapper {
+  height: 100%;
+  min-height: unset;
+}
+
+.fullscreen-editor-body .code-editor {
+  height: 100%;
+  min-height: unset;
+  font-size: 15px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+}
+
+.fullscreen-editor-body .code-editor-backdrop {
+  height: 100%;
+  min-height: unset;
+  border-radius: 0;
+  font-size: 15px;
+}
+
+/* Expand button style */
+.expand-btn {
+  background: linear-gradient(135deg, #6c63ff 0%, #48c6ef 100%) !important;
+  color: white !important;
+  border-color: transparent !important;
+  font-weight: bold;
+  box-shadow: 0 3px 10px rgba(108, 99, 255, 0.4) !important;
+}
+
+.expand-btn:hover {
+  box-shadow: 0 5px 15px rgba(108, 99, 255, 0.6) !important;
+  transform: translateY(-1px);
 }

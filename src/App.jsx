@@ -24,8 +24,17 @@ function App() {
   const [theme] = useState(() => {
     return localStorage.getItem('kidCodeEditor_theme') || 'light'
   })
-  const [view, setView] = useState('home') // 'home', 'quest', 'playground'
-  const [currentModule, setCurrentModule] = useState(null)
+  const [view, setView] = useState(() => {
+    return localStorage.getItem('kidCodeEditor_view') || 'home'
+  }) // 'home', 'quest', 'playground'
+  const [currentModule, setCurrentModule] = useState(() => {
+    const saved = localStorage.getItem('kidCodeEditor_currentModule')
+    return saved ? parseInt(saved, 10) : null
+  })
+
+  const [activeFile, setActiveFile] = useState(() => {
+    return localStorage.getItem('playground_activeFile') || 'index.html'
+  })
 
   // Set theme attribute on root element
   useEffect(() => {
@@ -49,20 +58,19 @@ function App() {
       return { 'index.html': '', 'style.css': '', 'script.js': '' }
     }
   })
-  const [activeFile, setActiveFile] = useState('index.html')
   const [history, setHistory] = useState([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [validationError, setValidationError] = useState(null)
+  const [errorLine, setErrorLine] = useState(null)
   const [customTourStep, setCustomTourStep] = useState(null)
   const [studentName] = useState('Explorer')
   const [modulesList, setModulesList] = useState(modules)
   const [showSkeletonSample, setShowSkeletonSample] = useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [showClearModal, setShowClearModal] = useState(false)
-  const [isSavingCloud, setIsSavingCloud] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  const [hasUnsavedCloudChanges, setHasUnsavedCloudChanges] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [expandedEditor, setExpandedEditor] = useState(false)
   const [pgModal, setPgModal] = useState({ isOpen: false, type: 'alert', title: '', message: '', onConfirm: () => { }, onCancel: () => { } })
   const [tourGuideSeen, setTourGuideSeen] = useState(() => {
     try {
@@ -73,17 +81,23 @@ function App() {
     }
   })
 
-  // Handle Before Unload
+  // View and Module persistence
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedCloudChanges) {
-        e.preventDefault()
-        e.returnValue = 'You have unsaved work. Would you like to save before leaving?'
-      }
+    localStorage.setItem('kidCodeEditor_view', view)
+    if (currentModule) {
+      localStorage.setItem('kidCodeEditor_currentModule', currentModule.toString())
+    } else {
+      localStorage.removeItem('kidCodeEditor_currentModule')
     }
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [hasUnsavedCloudChanges])
+  }, [view, currentModule])
+
+  // Robust Playground Persistence: centralized save whenever files or activeFile change
+  useEffect(() => {
+    localStorage.setItem('playground_files', JSON.stringify(playgroundFiles))
+    localStorage.setItem('playground_activeFile', activeFile)
+  }, [playgroundFiles, activeFile])
+
+  // Removed beforeunload alert to clean up UI for fast editing
 
   // Initialize modules with unlock status from localStorage
   useEffect(() => {
@@ -125,6 +139,18 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentModule, view, activeFile])
 
+  // Reactive validation — runs on EVERY code change including folder uploads
+  useEffect(() => {
+    if (!code || (!activeFile.endsWith('.html') && !currentModule)) {
+      setValidationError(null)
+      setErrorLine(null)
+      return
+    }
+    const error = validateHTMLStructure(code)
+    setValidationError(error ? error.message : null)
+    setErrorLine(error ? error.line : null)
+  }, [code, activeFile, currentModule])
+
   // Auto-save code on every change
   const handleCodeChange = (newCode, skipHistory = false) => {
     setCode(newCode)
@@ -132,9 +158,7 @@ function App() {
     if (currentModule) {
       saveModuleCode(currentModule, newCode)
     } else if (view === 'playground') {
-      const updatedFiles = { ...playgroundFiles, [activeFile]: newCode }
-      setPlaygroundFiles(updatedFiles)
-      localStorage.setItem('playground_files', JSON.stringify(updatedFiles))
+      setPlaygroundFiles(prev => ({ ...prev, [activeFile]: newCode }))
     }
 
     if (!skipHistory) {
@@ -144,52 +168,6 @@ function App() {
       if (newHistory.length > 50) newHistory.shift()
       setHistory(newHistory)
       setHistoryIndex(newHistory.length - 1)
-    }
-
-    // Only validate HTML structure for HTML files
-    if (activeFile.endsWith('.html') || currentModule) {
-      const error = validateHTMLStructure(newCode)
-      setValidationError(error)
-    } else {
-      setValidationError(null)
-    }
-    setHasUnsavedCloudChanges(true)
-  }
-
-  const handleSaveCloud = async () => {
-    setIsSavingCloud(true)
-    try {
-      const htmlContent = view === 'playground' ? playgroundFiles['index.html'] || '' : code
-      const cssContent = view === 'playground' ? playgroundFiles['style.css'] || '' : ''
-      const projectName = view === 'playground' ? 'Playground Project' : (modulesList.find(m => m.id === currentModule)?.name || 'Code Quest Project')
-
-      // Optimization: Delete previous saves for this project name to keep DB clean
-      await supabase
-        .from('student_projects')
-        .delete()
-        .eq('project_name', projectName)
-
-      const { error } = await supabase
-        .from('student_projects')
-        .insert([
-          {
-            html_content: htmlContent,
-            css_content: cssContent,
-            project_name: projectName
-          }
-        ])
-
-      if (error) throw error
-
-      setHasUnsavedCloudChanges(false)
-      setToastMessage('Success! Work saved to cloud ☁️')
-      setTimeout(() => setToastMessage(''), 3000)
-    } catch (err) {
-      console.error('Error saving to cloud:', err)
-      setToastMessage('Error saving to cloud ❌')
-      setTimeout(() => setToastMessage(''), 3000)
-    } finally {
-      setIsSavingCloud(false)
     }
   }
 
@@ -239,8 +217,11 @@ function App() {
       const prevCode = history[prevIndex]
       setHistoryIndex(prevIndex)
       setCode(prevCode)
-      if (currentModule) saveModuleCode(currentModule, prevCode)
-      else if (view === 'playground') localStorage.setItem('playground_code', prevCode)
+      if (currentModule) {
+        saveModuleCode(currentModule, prevCode)
+      } else if (view === 'playground') {
+        setPlaygroundFiles(prev => ({ ...prev, [activeFile]: prevCode }))
+      }
       setValidationError(validateHTMLStructure(prevCode))
     }
   }
@@ -251,8 +232,11 @@ function App() {
       const nextCode = history[nextIndex]
       setHistoryIndex(nextIndex)
       setCode(nextCode)
-      if (currentModule) saveModuleCode(currentModule, nextCode)
-      else if (view === 'playground') localStorage.setItem('playground_code', nextCode)
+      if (currentModule) {
+        saveModuleCode(currentModule, nextCode)
+      } else if (view === 'playground') {
+        setPlaygroundFiles(prev => ({ ...prev, [activeFile]: nextCode }))
+      }
       setValidationError(validateHTMLStructure(nextCode))
     }
   }
@@ -293,7 +277,6 @@ function App() {
         const updatedFiles = { ...playgroundFiles };
         delete updatedFiles[fileName];
         setPlaygroundFiles(updatedFiles);
-        localStorage.setItem('playground_files', JSON.stringify(updatedFiles));
 
         if (activeFile === fileName) {
           const remainingFiles = Object.keys(updatedFiles);
@@ -431,11 +414,6 @@ function App() {
   }
 
   const handleBackToHome = async () => {
-    if (hasUnsavedCloudChanges) {
-      if (window.confirm('You have unsaved work. Would you like to save before leaving?')) {
-        await handleSaveCloud()
-      }
-    }
     setView('home')
     setCurrentModule(null)
     setShowQuiz(false)
@@ -489,6 +467,21 @@ function App() {
   const activeModule = view === 'playground' ? null : modulesList.find((m) => m.id === currentModule)
   const isPlayground = view === 'playground'
 
+  const handleUploadFolder = (filesObj) => {
+    setPlaygroundFiles(prev => ({ ...prev, ...filesObj }))
+
+    if (filesObj['index.html']) {
+      setActiveFile('index.html')
+      setCode(filesObj['index.html'])
+    } else {
+      const firstKey = Object.keys(filesObj)[0];
+      if (firstKey) {
+        setActiveFile(firstKey)
+        setCode(filesObj[firstKey])
+      }
+    }
+  }
+
   return (
     <>
       {showTourGuide && activeModule && (
@@ -537,6 +530,7 @@ function App() {
             <h2 className="panel-title">
               ✏️ {isPlayground ? `Editor - ${activeFile}` : 'Code Editor'}
               <div className="editor-controls-group">
+                <button className="toolbar-btn expand-btn" onClick={() => setExpandedEditor(true)} title="Expand editor to see all code">⛶ Expand</button>
                 <button className="toolbar-btn" onClick={undo} disabled={historyIndex <= 0}>↩️ Undo</button>
                 <button className="toolbar-btn" onClick={redo} disabled={historyIndex >= history.length - 1}>↪️ Redo</button>
                 <button className="toolbar-btn clear-btn" onClick={clearCode}>🗑️ Clear</button>
@@ -582,7 +576,6 @@ function App() {
                           const updatedFiles = { ...playgroundFiles, [name]: defaultContent }
                           setPlaygroundFiles(updatedFiles)
                           setActiveFile(name)
-                          localStorage.setItem('playground_files', JSON.stringify(updatedFiles))
                         }
                         setPgModal(prev => ({ ...prev, isOpen: false }));
                       },
@@ -607,9 +600,51 @@ function App() {
               onInsertTag={handleInsertTag}
               fileName={activeFile}
               language={activeFile.split('.').pop()}
+              errorLine={errorLine}
             />
           </div>
         </div>
+
+        {/* FULLSCREEN EDITOR OVERLAY */}
+        {expandedEditor && (
+          <div className="fullscreen-editor-overlay" onClick={(e) => { if (e.target === e.currentTarget) setExpandedEditor(false) }}>
+            <div className="fullscreen-editor-card">
+              <div className="fullscreen-editor-header">
+                <span>✏️ {isPlayground ? `Editor - ${activeFile}` : 'Code Editor'}</span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button className="toolbar-btn" onClick={undo} disabled={historyIndex <= 0}>↩️ Undo</button>
+                  <button className="toolbar-btn" onClick={redo} disabled={historyIndex >= history.length - 1}>↪️ Redo</button>
+                  <button className="toolbar-btn clear-btn" onClick={clearCode}>🗑️ Clear</button>
+                  <button className="toolbar-btn expand-btn" onClick={() => setExpandedEditor(false)} title="Close expanded view">✕ Close</button>
+                </div>
+              </div>
+              {isPlayground && (
+                <div className="file-explorer-tab" style={{ margin: '0 0 6px 0' }}>
+                  {Object.keys(playgroundFiles).map(fileName => (
+                    <div key={fileName} className="file-tab-container">
+                      <button
+                        className={`file-tab ${activeFile === fileName ? 'active' : ''}`}
+                        onClick={() => setActiveFile(fileName)}
+                      >
+                        {fileName.endsWith('.html') ? '📄' : fileName.endsWith('.css') ? '🎨' : '⚡'} {fileName}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="fullscreen-editor-body">
+                <CodeEditor
+                  code={code}
+                  setCode={handleCodeChange}
+                  onInsertTag={handleInsertTag}
+                  fileName={activeFile}
+                  language={activeFile.split('.').pop()}
+                  errorLine={errorLine}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {showSuccessMessage && !isPlayground && (
           <div className="success-overlay">
@@ -629,6 +664,27 @@ function App() {
               <div className="validation-error-container">
                 <div className="validation-error-icon">🕵️‍♂️</div>
                 <div className="validation-error-message">{validationError}</div>
+                {errorLine && (
+                  <button
+                    className="error-goto-btn"
+                    onClick={() => {
+                      const textarea = document.querySelector('.code-editor');
+                      if (!textarea) return;
+                      const lines = code.split('\n');
+                      let charPos = 0;
+                      for (let i = 0; i < Math.min(errorLine - 1, lines.length); i++) {
+                        charPos += lines[i].length + 1;
+                      }
+                      textarea.focus();
+                      textarea.setSelectionRange(charPos, charPos + (lines[errorLine - 1] || '').length);
+                      // Scroll the textarea to the line
+                      const lineHeight = 22;
+                      textarea.scrollTop = Math.max(0, (errorLine - 3) * lineHeight);
+                    }}
+                  >
+                    📍 Show me the error!
+                  </button>
+                )}
                 <p>Fix your code to see the magic happen!</p>
               </div>
             ) : (
@@ -637,10 +693,9 @@ function App() {
                 onRun={handleRunCheck}
                 isPlayground={isPlayground}
                 files={playgroundFiles}
-                onSaveCloud={handleSaveCloud}
-                isSavingCloud={isSavingCloud}
                 onDownload={handleDownload}
                 isDownloading={isDownloading}
+                onUploadFolder={isPlayground ? handleUploadFolder : undefined}
               />
             )}
           </div>
